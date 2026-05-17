@@ -1,0 +1,1084 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Physiotherapy Clinic Schedule</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=Playfair+Display:italic,wght@700&family=JetBrains+Mono:wght@400;600&display=swap');
+
+    :root {
+      --bg-color: #F8F7F2;
+      --card-bg: #ffffff;
+      --text-main: #2C2C2B;
+      --text-muted: #5A5A40;
+      --border-color: #D1CFCA;
+      --primary: #8DA08A; /* Sage for PHYA */
+      --secondary: #C67B5C; /* Terracotta for TISA */
+      --danger: #9ca3af; /* Gray for Blocked */
+      --warning: #FFF9C4; /* Yellow for Remarks */
+      --olive: #5A5A40;
+      --holiday: #E5E5E5;
+      
+      --font-sans: 'Inter', sans-serif;
+      --font-serif: 'Playfair Display', serif;
+      --font-mono: 'JetBrains Mono', monospace;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    
+    body {
+      font-family: var(--font-sans);
+      background-color: var(--bg-color);
+      color: var(--text-main);
+      line-height: 1.5;
+    }
+
+    header {
+      background-color: var(--bg-color);
+      border-bottom: 1px solid var(--border-color);
+      padding: 1rem 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+
+    h1 {
+      font-family: var(--font-serif);
+      font-style: italic;
+      font-size: 1.5rem;
+      font-weight: 700;
+      letter-spacing: 0;
+      color: var(--text-main);
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 2rem auto;
+      padding: 0 2rem;
+    }
+
+    /* Warning banner */
+    #db-warning {
+      background-color: #fef2f2;
+      border: 1px solid #fca5a5;
+      color: #991b1b;
+      padding: 1rem;
+      border-radius: 4px;
+      margin-bottom: 2rem;
+      display: none;
+      font-size: 0.875rem;
+    }
+
+    /* Controls */
+    .controls {
+      display: flex;
+      gap: 0.5rem;
+      align-items: center;
+    }
+
+    button {
+      background: transparent;
+      border: 1px solid transparent;
+      cursor: pointer;
+      padding: 0.5rem 1rem;
+      border-radius: 9999px;
+      font-size: 0.875rem;
+      font-weight: 600;
+      color: var(--text-main);
+      transition: all 0.2s;
+    }
+
+    button:hover {
+      background: var(--card-bg);
+      border-color: var(--border-color);
+    }
+
+    button.primary {
+      background: var(--olive);
+      color: #fff;
+      border-color: var(--olive);
+      border-radius: 4px;
+    }
+
+    button.primary:hover {
+      background: #4a4a35;
+    }
+
+    .icon-btn {
+      padding: 0.25rem 0.5rem;
+      font-size: 1rem;
+      line-height: 1;
+      border: 1px solid transparent;
+    }
+
+    #month-title {
+      font-weight: 600;
+      font-size: 1rem;
+    }
+
+    /* Monthly View Calendar */
+    .calendar-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 0;
+      border-top: 1px solid var(--border-color);
+      border-left: 1px solid var(--border-color);
+      border-radius: 0.5rem;
+      overflow: hidden;
+      margin-top: 1rem;
+    }
+
+    .calendar-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0.5rem;
+    }
+
+    .day-header {
+      font-size: 0.625rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--text-main);
+      opacity: 0.4;
+      font-weight: 700;
+      text-align: left;
+      padding: 0.5rem 0.75rem;
+      background-color: var(--border-color);
+      border-bottom: 1px solid var(--border-color);
+      border-right: 1px solid var(--border-color);
+    }
+
+    .calendar-cell {
+      background: var(--card-bg);
+      padding: 0.75rem;
+      min-height: 112px;
+      border-bottom: 1px solid var(--border-color);
+      border-right: 1px solid var(--border-color);
+      display: flex;
+      flex-direction: column;
+      cursor: pointer;
+      transition: background 0.2s;
+      position: relative;
+    }
+
+    .calendar-cell.empty {
+      background: var(--bg-color);
+      cursor: default;
+    }
+
+    .calendar-cell:not(.empty):hover {
+      background-color: var(--bg-color);
+    }
+
+    .calendar-cell.holiday {
+      background-color: var(--holiday);
+      cursor: not-allowed;
+    }
+    
+    .calendar-cell.blocked {
+      background-color: var(--danger);
+      background-image: repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(255,255,255,0.1) 10px, rgba(255,255,255,0.1) 20px);
+    }
+
+    .calendar-cell.has-remark {
+      /* background-color: var(--warning); Removed to prevent yellow background */
+    }
+
+    .blocked-reason-text {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: white;
+      text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      pointer-events: none;
+      text-align: center;
+      width: 100%;
+      padding: 0 0.25rem;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .date-number {
+      font-size: 1.5rem;
+      font-weight: 300;
+      line-height: 1;
+      margin-bottom: 0.5rem;
+    }
+
+    .cell-stats {
+      margin-top: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+    }
+
+    .stat-row {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.6875rem; /* 11px */
+      font-weight: 400;
+      color: var(--text-main);
+      opacity: 0.7;
+    }
+
+    .stat-row::before {
+      content: '';
+      display: block;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+    }
+
+    .stat-phya::before { background-color: var(--primary); }
+    .stat-tisa::before { background-color: var(--secondary); }
+    
+    .stat-row span:first-child::after { content: ':'; }
+
+    .tag {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-weight: 600;
+      display: inline-block;
+      position: absolute;
+      top: 0.75rem;
+      right: 0.75rem;
+    }
+    .tag-holiday { background: rgba(0,0,0,0.1); color: var(--text-muted); }
+    .tag-blocked { background: rgba(255,255,255,0.3); color: #fff; }
+    .tag-remark { background: transparent; border: 1px solid rgba(0,0,0,0.1); color: #b45309; }
+
+    .remark-text {
+      font-size: 0.65rem;
+      color: #92400e;
+      margin-top: 0.25rem;
+      line-height: 1.15;
+      font-weight: 500;
+      overflow: hidden;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      word-break: break-word;
+    }
+
+    /* Daily View */
+    .daily-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.5rem;
+      border-bottom: 1px solid var(--border-color);
+      padding-bottom: 1.5rem;
+    }
+
+    .daily-header h2 {
+      font-family: var(--font-serif);
+      font-style: italic;
+      font-size: 1.5rem;
+      font-weight: 700;
+      margin-top: 0.5rem;
+    }
+
+    .daily-controls {
+      background: transparent;
+      margin-bottom: 1.5rem;
+      display: flex;
+      gap: 2rem;
+      align-items: center;
+    }
+
+    .input-group {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .input-group label {
+      font-size: 0.6875rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      font-weight: 700;
+      color: var(--olive);
+    }
+
+    .input-group input[type="text"] {
+      padding: 0.5rem;
+      border: 1px solid var(--border-color);
+      border-radius: 4px;
+      font-size: 0.875rem;
+      width: 250px;
+      background: var(--card-bg);
+      outline: none;
+    }
+    
+    .input-group input[type="text"]:focus {
+      border-color: var(--olive);
+    }
+
+    /* Slots List */
+    .slots-container {
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 0;
+    }
+
+    .slot-row {
+      display: grid;
+      grid-template-columns: 80px 1fr 1fr 100px;
+      align-items: center;
+      padding: 0.75rem 1rem;
+      border-bottom: 1px solid var(--border-color);
+    }
+    
+    .slot-row:last-child {
+      border-bottom: none;
+    }
+
+    .slot-row.blocked {
+      background-color: var(--bg-color);
+      opacity: 0.6;
+    }
+
+    .slot-time {
+      font-family: var(--font-mono);
+      font-weight: 600;
+      font-size: 0.875rem;
+    }
+
+    .slot-counter {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .slot-counter-label {
+      font-size: 0.625rem;
+      text-transform: uppercase;
+      font-weight: 700;
+      width: 32px;
+      opacity: 0.5;
+    }
+
+    .counter-val {
+      font-size: 0.875rem;
+      font-weight: 700;
+      width: 20px;
+      text-align: center;
+    }
+
+    .counter-btn {
+      width: 36px;
+      height: 36px;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.25rem;
+      padding: 0;
+      border: 1px solid var(--border-color);
+      background: transparent;
+      cursor: pointer;
+    }
+    
+    .counter-btn[data-type="phya"] { border-color: var(--primary); color: var(--primary); }
+    .counter-btn[data-type="phya"]:hover { background: var(--primary); color: #fff; }
+    
+    .counter-btn[data-type="tisa"] { border-color: var(--secondary); color: var(--secondary); }
+    .counter-btn[data-type="tisa"]:hover { background: var(--secondary); color: #fff; }
+
+    /* Dashboard Summary in Daily */
+    .daily-summary {
+      display: flex;
+      gap: 2rem;
+    }
+
+    .summary-box {
+      text-align: center;
+      font-size: 0.625rem;
+      text-transform: uppercase;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+    }
+
+    .summary-box span {
+      display: block;
+      font-family: var(--font-mono);
+      font-size: 1.25rem;
+      font-weight: 400;
+      letter-spacing: normal;
+      color: var(--text-main);
+      margin-bottom: 0.25rem;
+    }
+    
+    .summary-phya { color: var(--primary); }
+    .summary-tisa { color: var(--secondary); }
+    
+    /* MOBILE STYLES */
+    @media (max-width: 768px) {
+      header {
+        padding: 1rem;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.75rem;
+      }
+      
+      .container {
+        padding: 0 0.5rem;
+        margin: 1rem auto;
+      }
+
+      .calendar-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1rem;
+      }
+
+      .controls {
+        width: 100%;
+        justify-content: space-between;
+      }
+      
+      .calendar-cell {
+        padding: 0.25rem;
+        min-height: 80px;
+      }
+
+      .day-header {
+        padding: 0.5rem 0.1rem;
+        font-size: 0.5rem;
+        letter-spacing: 0;
+        text-align: center;
+      }
+      
+      .date-number {
+        font-size: 1rem;
+        margin-bottom: 0.25rem;
+      }
+
+      .stat-row {
+        font-size: 0.6rem;
+      }
+      
+      .stat-row span:first-child {
+        display: none;
+      }
+      
+      .tag {
+        font-size: 0;
+        width: 8px;
+        height: 8px;
+        padding: 0;
+        border-radius: 50%;
+        overflow: hidden;
+        right: 4px;
+        top: 4px;
+      }
+
+      .tag-holiday, .tag-blocked, .tag-remark {
+        text-indent: -9999px;
+      }
+
+      .remark-text {
+        font-size: 0.55rem;
+        -webkit-line-clamp: 1;
+        margin-top: 0.1rem;
+      }
+
+      .blocked-reason-text {
+        font-size: 0.55rem;
+        letter-spacing: 0;
+      }
+
+      .daily-header {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+      
+      .daily-summary {
+        width: 100%;
+        justify-content: space-around;
+        margin-top: 1rem;
+      }
+
+      .daily-controls {
+        flex-direction: column;
+        align-items: stretch;
+        margin-bottom: 0.5rem;
+      }
+      
+      .input-group input[type="text"] {
+        width: 100%;
+      }
+
+      .counter-btn {
+        width: 32px;
+        height: 32px;
+        font-size: 1.25rem;
+      }
+
+      .slot-row {
+        display: grid;
+        grid-template-columns: 50px 1fr 1fr;
+        row-gap: 0.25rem;
+        column-gap: 0.25rem;
+        padding: 0.5rem 0.25rem;
+      }
+      
+      .col-time { 
+         grid-column: 1 / 2; 
+         grid-row: 1 / 2; 
+         display: flex;
+         align-items: center;
+         font-size: 0.75rem;
+      }
+      .col-phya { 
+         grid-column: 2 / 3; 
+         grid-row: 1 / 2; 
+         justify-content: center; 
+         gap: 0.25rem;
+      }
+      .col-tisa { 
+         grid-column: 3 / 4; 
+         grid-row: 1 / 2; 
+         justify-content: center; 
+         gap: 0.25rem;
+      }
+      .col-block { 
+         grid-column: 1 / 4; 
+         grid-row: 2 / 3; 
+         justify-content: flex-end; 
+         padding-top: 0.25rem;
+      }
+
+      .slot-counter-label {
+        font-size: 0.55rem;
+        width: 28px;
+        margin-right: -2px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>Physiotherapy Clinic Schedule</h1>
+  </header>
+
+  <div class="container">
+    <div id="db-warning">
+      <strong>Preview Mode Active:</strong> Firebase is not configured. Real-time syncing is disabled. 
+      Please add your Firebase config in the <code>index.html</code> source code to enable the database.
+    </div>
+
+    <!-- MONTHLY VIEW -->
+    <div id="view-monthly">
+      <div class="calendar-header">
+        <h2 id="month-title">May 2024</h2>
+        <div class="controls">
+          <button id="btn-prev-month" class="icon-btn">&larr;</button>
+          <button id="btn-today">Today</button>
+          <button id="btn-next-month" class="icon-btn">&rarr;</button>
+        </div>
+      </div>
+      
+      <div class="calendar-grid" id="calendar-grid">
+        <div class="day-header">Mon</div>
+        <div class="day-header">Tue</div>
+        <div class="day-header">Wed</div>
+        <div class="day-header">Thu</div>
+        <div class="day-header">Fri</div>
+        <!-- Cells injected via JS -->
+      </div>
+    </div>
+
+    <!-- DAILY VIEW -->
+    <div id="view-daily" style="display: none;">
+      <div class="daily-header">
+        <div>
+          <button id="btn-back-monthly" style="margin-bottom: 0.5rem;">&larr; Back to Month</button>
+          <h2 id="daily-title">May 15, 2024</h2>
+        </div>
+        <div class="daily-summary">
+          <div class="summary-box summary-phya"><span id="daily-total-phya">0</span> PHYA</div>
+          <div class="summary-box summary-tisa"><span id="daily-total-tisa">0</span> TISA</div>
+        </div>
+      </div>
+
+      <div class="daily-controls">
+        <div class="input-group" style="flex-wrap: wrap;">
+          <input type="checkbox" id="check-block-day">
+          <label for="check-block-day">Block Entire Day</label>
+          <input type="text" id="input-block-reason" placeholder="Reason (e.g. AL)" style="width: 150px; display: none;">
+        </div>
+        <div class="input-group">
+          <label for="input-remark">Remark:</label>
+          <input type="text" id="input-remark" placeholder="e.g. AL with relief staff">
+        </div>
+      </div>
+
+      <div class="slots-container" id="slots-container">
+        <!-- Slot rows injected via JS -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Firebase Modular SDK -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+    import { 
+        getFirestore, collection, doc, onSnapshot, 
+        setDoc, updateDoc, increment, getDoc,
+        query, where, documentId
+    } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+
+    // --- FIREBASE CONFIGURATION ---
+    const firebaseConfig = {
+      apiKey: "AIzaSyCL8JN1Eu7u4vtafgoKxN9pqqRECfw3sJs",
+      authDomain: "opd-schedule-book.firebaseapp.com",
+      projectId: "opd-schedule-book",
+      storageBucket: "opd-schedule-book.firebasestorage.app",
+      messagingSenderId: "996801297233",
+      appId: "1:996801297233:web:18df1c76571461b718f170",
+      measurementId: "G-8WL9RNH4VB"
+    };
+
+    const isFirebaseConfigured = firebaseConfig.apiKey !== "YOUR_API_KEY";
+    let db = null;
+    
+    if (isFirebaseConfigured) {
+        try {
+            const app = initializeApp(firebaseConfig);
+            db = getFirestore(app);
+        } catch (e) {
+            console.error("Firebase init error", e);
+        }
+    } else {
+        document.getElementById('db-warning').style.display = 'block';
+    }
+
+    // --- APP STATE ---
+    const state = {
+        currentView: 'monthly', // 'monthly' | 'daily'
+        viewDate: new Date(),   // currently viewed month
+        selectedDateStr: null,  // 'YYYY-MM-DD' selected for daily view
+        scheduleData: {},       // map of dateStr -> {is_blocked, remark, slots}
+        holidays: new Set(),    // set of 'YYYY-MM-DD'
+        unsubscribe: null
+    };
+
+    // Timeslots: 13:15 to 16:30 every 15 mins
+    const TIMESLOTS = [
+      "13:15", "13:30", "13:45", "14:00", "14:15", "14:30", "14:45", 
+      "15:00", "15:15", "15:30", "15:45", "16:00", "16:15", "16:30"
+    ];
+
+    // --- UTILS ---
+    function toDateStr(date) {
+        const d = new Date(date);
+        d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+        return d.toISOString().split('T')[0];
+    }
+
+    function isWeekday(dateStr) {
+        const day = new Date(dateStr).getDay();
+        return day !== 0 && day !== 6;
+    }
+
+    function getDaysInMonth(year, month) {
+        return new Date(year, month + 1, 0).getDate();
+    }
+
+    async function fetchHolidays(year) {
+        try {
+            const res = await fetch(`https://date.nager.at/api/v3/PublicHolidays/${year}/HK`);
+            if (res.ok) {
+                const data = await res.json();
+                data.forEach(h => state.holidays.add(h.date));
+            }
+        } catch (e) {
+            console.error("Could not fetch holidays", e);
+        }
+    }
+
+    // --- DATABASE OPERATIONS ---
+    function subscribeToMonth() {
+        if (state.unsubscribe) state.unsubscribe();
+        if (!db) return;
+
+        const year = state.viewDate.getFullYear();
+        const month = state.viewDate.getMonth();
+        const startStr = toDateStr(new Date(year, month, 1));
+        const endStr = toDateStr(new Date(year, month + 1, 0));
+
+        const q = query(
+            collection(db, "schedule"), 
+            where(documentId(), ">=", startStr),
+            where(documentId(), "<=", endStr)
+        );
+
+        state.unsubscribe = onSnapshot(q, (snapshot) => {
+            snapshot.docChanges().forEach((change) => {
+                const dateStr = change.doc.id;
+                if (change.type === "removed") {
+                    delete state.scheduleData[dateStr];
+                } else {
+                    state.scheduleData[dateStr] = change.doc.data();
+                }
+            });
+            render();
+        }, (error) => {
+            console.error("Firestore Error:", error);
+        });
+    }
+
+    async function ensureDocExists(dateStr) {
+        if (!state.scheduleData[dateStr]) {
+            state.scheduleData[dateStr] = { is_blocked: false, remark: "", slots: {} };
+        }
+        if (!db) return; // In-memory
+        
+        const ref = doc(db, "schedule", dateStr);
+        const snap = await getDoc(ref);
+        if (!snap.exists()) {
+            await setDoc(ref, {
+                is_blocked: false,
+                block_reason: "",
+                remark: "",
+                slots: {}
+            });
+        }
+    }
+
+    async function updateCaseCount(dateStr, time, type, delta) {
+        await ensureDocExists(dateStr);
+        
+        // In-memory update
+        const dayData = state.scheduleData[dateStr];
+        if (!dayData.slots[time]) {
+            dayData.slots[time] = { phya: 0, tisa: 0, is_blocked: false };
+        }
+        dayData.slots[time][type] = Math.max(0, dayData.slots[time][type] + delta);
+
+        // Firestore update
+        if (db) {
+            const ref = doc(db, "schedule", dateStr);
+            await updateDoc(ref, {
+                [`slots.${time}.${type}`]: increment(delta)
+            }).catch(e => {
+                // If nested field map doesn't exist, we must construct it or it will fail
+                // increment requires the parent map to exist or it creates it, but standard dot notation is usually fine.
+                console.error("Update failed", e);
+                // Fallback to merge
+                setDoc(ref, { slots: { [time]: { [type]: dayData.slots[time][type] } } }, { merge: true });
+            });
+        }
+        if (!db) renderDaily(); // Force manual re-render if no db
+    }
+
+    async function updateDailyStatus(dateStr, field, value) {
+        await ensureDocExists(dateStr);
+        
+        // In-memory
+        state.scheduleData[dateStr][field] = value;
+        
+        if (db) {
+            const ref = doc(db, "schedule", dateStr);
+            await updateDoc(ref, { [field]: value });
+        }
+        if (!db) renderDaily();
+    }
+
+    async function toggleSlotBlock(dateStr, time, isBlocked) {
+        await ensureDocExists(dateStr);
+        
+        // In-memory
+        const dayData = state.scheduleData[dateStr];
+        if (!dayData.slots[time]) {
+            dayData.slots[time] = { phya: 0, tisa: 0 };
+        }
+        dayData.slots[time].is_blocked = isBlocked;
+
+        // Firestore
+        if (db) {
+            const ref = doc(db, "schedule", dateStr);
+            await setDoc(ref, { slots: { [time]: { is_blocked: isBlocked } } }, { merge: true });
+        }
+        if (!db) renderDaily();
+    }
+
+    // --- RENDER LOGIC ---
+    function render() {
+        if (state.currentView === 'monthly') {
+            document.getElementById('view-monthly').style.display = 'block';
+            document.getElementById('view-daily').style.display = 'none';
+            renderMonthly();
+        } else {
+            document.getElementById('view-monthly').style.display = 'none';
+            document.getElementById('view-daily').style.display = 'block';
+            renderDaily();
+        }
+    }
+
+    function renderMonthly() {
+        const year = state.viewDate.getFullYear();
+        const month = state.viewDate.getMonth();
+        
+        const titleFormatter = new Intl.DateTimeFormat('en-US', { month: 'long', year: 'numeric' });
+        document.getElementById('month-title').textContent = titleFormatter.format(state.viewDate);
+
+        const grid = document.getElementById('calendar-grid');
+        // keep headers, remove old cells
+        Array.from(grid.querySelectorAll('.calendar-cell')).forEach(el => el.remove());
+
+        const firstDayOfMonth = new Date(year, month, 1);
+        const daysInMonth = getDaysInMonth(year, month);
+        
+        // Find what day of week the 1st is (0=Sun, 1=Mon, ... 6=Sat)
+        let firstDayIndex = firstDayOfMonth.getDay();
+        // Since we only show Mon-Fri, if the 1st is on a weekend, we just skip it in layout?
+        // Wait, regular calendar layout starts on Monday for us.
+        // If 1st is Tue (2), we need 1 empty cell (Mon).
+        
+        // Adjust index so Mon=0, Tue=1, ... Fri=4
+        let startOffset = firstDayIndex - 1;
+        if (startOffset < 0 && firstDayIndex === 0) {
+            startOffset = -1; // Sunday, will skip drawing it
+        }
+
+        // Add empty cells for padding
+        for (let i = 0; i < startOffset && startOffset >= 0; i++) {
+            const emptyCell = document.createElement('div');
+            emptyCell.className = 'calendar-cell empty';
+            grid.appendChild(emptyCell);
+        }
+
+        for (let day = 1; day <= daysInMonth; day++) {
+            const d = new Date(year, month, day);
+            const dateStr = toDateStr(d);
+            
+            if (!isWeekday(dateStr)) continue; // Skip weekends
+
+            const cell = document.createElement('div');
+            cell.className = 'calendar-cell';
+            
+            const isHol = state.holidays.has(dateStr);
+            const data = state.scheduleData[dateStr] || { slots: {}, is_blocked: false, block_reason: "", remark: "" };
+            
+            let totalPhya = 0;
+            let totalTisa = 0;
+            Object.values(data.slots || {}).forEach(slot => {
+                totalPhya += slot.phya || 0;
+                totalTisa += slot.tisa || 0;
+            });
+
+            if (isHol) cell.classList.add('holiday');
+            if (data.is_blocked) cell.classList.add('blocked');
+            if (data.remark) cell.classList.add('has-remark');
+
+            let html = `<div class="date-number">${day}</div>`;
+            
+            if (data.remark) {
+                 html += `<div class="remark-text" title="${data.remark}">${data.remark}</div>`;
+            }
+            
+            if (isHol) {
+                html += `<div class="tag tag-holiday">Public Holiday</div>`;
+            } else if (data.is_blocked) {
+                const reason = data.block_reason || 'Blocked';
+                html += `<div class="blocked-reason-text">${reason}</div>`;
+                html += `<div class="tag tag-blocked">${reason}</div>`;
+            } else {
+                html += `
+                    <div class="cell-stats">
+                      <div class="stat-row stat-phya"><span>PHYA</span><span>${totalPhya}</span></div>
+                      <div class="stat-row stat-tisa"><span>TISA</span><span>${totalTisa}</span></div>
+                    </div>
+                `;
+            }
+
+            if (data.remark) {
+                 html += `<div class="tag tag-remark" title="${data.remark}">REMARK</div>`;
+            }
+
+            cell.innerHTML = html;
+            
+            if (!isHol) {
+                cell.addEventListener('click', () => {
+                    state.selectedDateStr = dateStr;
+                    state.currentView = 'daily';
+                    render();
+                });
+            }
+
+            grid.appendChild(cell);
+        }
+    }
+
+    function renderDaily() {
+        if (!state.selectedDateStr) return;
+
+        const dateStr = state.selectedDateStr;
+        const d = new Date(dateStr);
+        const titleFormatter = new Intl.DateTimeFormat('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
+        
+        // Add explicit UTC correction so the title shows the correct day locally
+        const localD = new Date(d.getTime() + d.getTimezoneOffset() * 60000);
+        document.getElementById('daily-title').textContent = titleFormatter.format(localD);
+
+        const data = state.scheduleData[dateStr] || { slots: {}, is_blocked: false, block_reason: "", remark: "" };
+
+        // Update top-level controls
+        const blockCheckbox = document.getElementById('check-block-day');
+        const blockReasonInput = document.getElementById('input-block-reason');
+        const remarkInput = document.getElementById('input-remark');
+        
+        blockCheckbox.checked = !!data.is_blocked;
+        blockReasonInput.value = data.block_reason || "";
+        blockReasonInput.style.display = data.is_blocked ? 'block' : 'none';
+        remarkInput.value = data.remark || "";
+
+        // Remove old listeners to prevent duplication
+        const newBlockCheckbox = blockCheckbox.cloneNode(true);
+        blockCheckbox.parentNode.replaceChild(newBlockCheckbox, blockCheckbox);
+        newBlockCheckbox.addEventListener('change', (e) => {
+            const isBlocked = e.target.checked;
+            document.getElementById('input-block-reason').style.display = isBlocked ? 'block' : 'none';
+            updateDailyStatus(dateStr, 'is_blocked', isBlocked);
+        });
+
+        const newBlockReason = blockReasonInput.cloneNode(true);
+        blockReasonInput.parentNode.replaceChild(newBlockReason, blockReasonInput);
+        newBlockReason.addEventListener('blur', (e) => {
+            updateDailyStatus(dateStr, 'block_reason', e.target.value);
+        });
+
+        const newRemarkInput = remarkInput.cloneNode(true);
+        remarkInput.parentNode.replaceChild(newRemarkInput, remarkInput);
+        newRemarkInput.addEventListener('blur', (e) => {
+            updateDailyStatus(dateStr, 'remark', e.target.value);
+        });
+
+        const slotsContainer = document.getElementById('slots-container');
+        slotsContainer.innerHTML = '';
+
+        let dayPhya = 0;
+        let dayTisa = 0;
+
+        TIMESLOTS.forEach(time => {
+            const slot = data.slots[time] || { phya: 0, tisa: 0, is_blocked: false };
+            dayPhya += slot.phya || 0;
+            dayTisa += slot.tisa || 0;
+
+            const row = document.createElement('div');
+            row.className = 'slot-row';
+            if (slot.is_blocked || data.is_blocked) row.classList.add('blocked');
+
+            const isDisabled = data.is_blocked || slot.is_blocked ? 'disabled' : '';
+
+            row.innerHTML = `
+                <div class="slot-time col-time">${time}</div>
+                
+                <div class="slot-counter col-phya">
+                    <span class="slot-counter-label phya">PHYA</span>
+                    <button class="counter-btn" data-time="${time}" data-type="phya" data-delta="-1" ${isDisabled}>-</button>
+                    <span class="counter-val">${slot.phya || 0}</span>
+                    <button class="counter-btn" data-time="${time}" data-type="phya" data-delta="1" ${isDisabled}>+</button>
+                </div>
+                
+                <div class="slot-counter col-tisa">
+                    <span class="slot-counter-label tisa">TISA</span>
+                    <button class="counter-btn" data-time="${time}" data-type="tisa" data-delta="-1" ${isDisabled}>-</button>
+                    <span class="counter-val">${slot.tisa || 0}</span>
+                    <button class="counter-btn" data-time="${time}" data-type="tisa" data-delta="1" ${isDisabled}>+</button>
+                </div>
+
+                <div class="input-group col-block" style="justify-content: flex-end;">
+                    <label style="font-size: 0.75rem;"><input type="checkbox" class="slot-block-cb" data-time="${time}" ${slot.is_blocked ? 'checked' : ''} ${data.is_blocked ? 'disabled' : ''}> Block</label>
+                </div>
+            `;
+
+            slotsContainer.appendChild(row);
+        });
+
+        // Update totals
+        document.getElementById('daily-total-phya').textContent = dayPhya;
+        document.getElementById('daily-total-tisa').textContent = dayTisa;
+
+        // Attach slot events
+        slotsContainer.querySelectorAll('.counter-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const time = e.target.dataset.time;
+                const type = e.target.dataset.type;
+                const delta = parseInt(e.target.dataset.delta, 10);
+                
+                // Prevent negative count
+                const slotData = data.slots[time] || { phya: 0, tisa: 0 };
+                if (slotData[type] === 0 && delta < 0) return;
+
+                updateCaseCount(dateStr, time, type, delta);
+            });
+        });
+
+        slotsContainer.querySelectorAll('.slot-block-cb').forEach(cb => {
+            cb.addEventListener('change', (e) => {
+                const time = e.target.dataset.time;
+                toggleSlotBlock(dateStr, time, e.target.checked);
+            });
+        });
+    }
+
+    // --- EVENT LISTENERS ---
+    document.getElementById('btn-prev-month').addEventListener('click', () => {
+        state.viewDate.setMonth(state.viewDate.getMonth() - 1);
+        subscribeToMonth();
+        render();
+    });
+
+    document.getElementById('btn-next-month').addEventListener('click', () => {
+        state.viewDate.setMonth(state.viewDate.getMonth() + 1);
+        subscribeToMonth();
+        render();
+    });
+
+    document.getElementById('btn-today').addEventListener('click', () => {
+        state.viewDate = new Date();
+        subscribeToMonth();
+        render();
+    });
+
+    document.getElementById('btn-back-monthly').addEventListener('click', () => {
+        state.currentView = 'monthly';
+        render();
+    });
+
+    // --- INIT ---
+    async function init() {
+        const currentYear = new Date().getFullYear();
+        await Promise.all([
+            fetchHolidays(currentYear),
+            // Fetch next year just in case we are near Dec
+            fetchHolidays(currentYear + 1)
+        ]);
+        subscribeToMonth();
+        render();
+    }
+
+    init();
+  </script>
+</body>
+</html>
+
