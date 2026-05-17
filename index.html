@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Physiotherapy Clinic Schedule</title>
+  <title>Andrew Lui OPD Schedule</title>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=Playfair+Display:italic,wght@700&family=JetBrains+Mono:wght@400;600&display=swap');
 
@@ -214,6 +214,17 @@
       font-weight: 300;
       line-height: 1;
       margin-bottom: 0.5rem;
+    }
+
+    .total-cases-center {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      flex-grow: 1;
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: var(--olive);
+      opacity: 0.8;
     }
 
     .cell-stats {
@@ -533,27 +544,31 @@
       .slot-row {
         display: grid;
         grid-template-columns: 50px 1fr 1fr;
-        row-gap: 0.25rem;
-        column-gap: 0.25rem;
-        padding: 0.5rem 0.25rem;
+        grid-template-rows: auto auto;
+        row-gap: 0.15rem;
+        column-gap: 0;
+        padding: 0.4rem 0.25rem;
       }
       
       .col-time { 
          grid-column: 1 / 2; 
          grid-row: 1 / 2; 
+         font-size: 0.85rem;
+         font-weight: 700;
+         padding-bottom: 0;
+         border-bottom: none;
          display: flex;
          align-items: center;
-         font-size: 0.75rem;
       }
       .col-phya { 
          grid-column: 2 / 3; 
-         grid-row: 1 / 2; 
-         justify-content: center; 
+         grid-row: 1 / 2;
+         justify-content: center;
          gap: 0.25rem;
       }
       .col-tisa { 
          grid-column: 3 / 4; 
-         grid-row: 1 / 2; 
+         grid-row: 1 / 2;
          justify-content: center; 
          gap: 0.25rem;
       }
@@ -561,13 +576,15 @@
          grid-column: 1 / 4; 
          grid-row: 2 / 3; 
          justify-content: flex-end; 
-         padding-top: 0.25rem;
+         padding-top: 0.15rem;
+         border-top: none;
+         margin-top: 0;
       }
 
       .slot-counter-label {
         font-size: 0.55rem;
-        width: 28px;
         margin-right: -2px;
+        width: 24px;
       }
     }
   </style>
@@ -575,7 +592,10 @@
 <body>
 
   <header>
-    <h1>Physiotherapy Clinic Schedule</h1>
+    <div style="display: flex; align-items: center; gap: 0.2rem; width: 100%;">
+      <button id="btn-back-monthly" style="display: none; background: transparent; border: none; font-size: 1.25rem; cursor: pointer; padding: 0.2rem 0.4rem; color: var(--primary);">&larr;</button>
+      <h1 style="white-space: nowrap; font-size: clamp(1rem, 5.5vw, 1.5rem);">Andrew Lui OPD Schedule</h1>
+    </div>
   </header>
 
   <div class="container">
@@ -609,7 +629,6 @@
     <div id="view-daily" style="display: none;">
       <div class="daily-header">
         <div>
-          <button id="btn-back-monthly">&larr; Back to Month</button>
           <h2 id="daily-title">May 15, 2024</h2>
         </div>
       </div>
@@ -826,10 +845,12 @@
         if (state.currentView === 'monthly') {
             document.getElementById('view-monthly').style.display = 'block';
             document.getElementById('view-daily').style.display = 'none';
+            document.getElementById('btn-back-monthly').style.display = 'none';
             renderMonthly();
         } else {
             document.getElementById('view-monthly').style.display = 'none';
             document.getElementById('view-daily').style.display = 'block';
+            document.getElementById('btn-back-monthly').style.display = 'block';
             renderDaily();
         }
     }
@@ -903,7 +924,9 @@
                 html += `<div class="blocked-reason-text">${reason}</div>`;
                 html += `<div class="tag tag-blocked">${reason}</div>`;
             } else {
+                const totalCases = totalPhya + totalTisa;
                 html += `
+                    <div class="total-cases-center">${totalCases}</div>
                     <div class="cell-stats">
                       <div class="stat-row stat-phya"><span>PHYA</span><span>${totalPhya}</span></div>
                       <div class="stat-row stat-tisa"><span>TISA</span><span>${totalTisa}</span></div>
