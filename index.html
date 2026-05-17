@@ -280,24 +280,24 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 1.5rem;
+      margin-bottom: 0.5rem;
       border-bottom: 1px solid var(--border-color);
-      padding-bottom: 1.5rem;
+      padding-bottom: 0.5rem;
     }
 
     .daily-header h2 {
       font-family: var(--font-serif);
       font-style: italic;
-      font-size: 1.5rem;
+      font-size: 1.25rem;
       font-weight: 700;
-      margin-top: 0.5rem;
+      margin-top: 0.25rem;
     }
 
     .daily-controls {
       background: transparent;
-      margin-bottom: 1.5rem;
+      margin-bottom: 0.5rem;
       display: flex;
-      gap: 2rem;
+      gap: 1rem;
       align-items: center;
     }
 
@@ -609,12 +609,8 @@
     <div id="view-daily" style="display: none;">
       <div class="daily-header">
         <div>
-          <button id="btn-back-monthly" style="margin-bottom: 0.5rem;">&larr; Back to Month</button>
+          <button id="btn-back-monthly">&larr; Back to Month</button>
           <h2 id="daily-title">May 15, 2024</h2>
-        </div>
-        <div class="daily-summary">
-          <div class="summary-box summary-phya"><span id="daily-total-phya">0</span> PHYA</div>
-          <div class="summary-box summary-tisa"><span id="daily-total-tisa">0</span> TISA</div>
         </div>
       </div>
 
@@ -632,6 +628,11 @@
 
       <div class="slots-container" id="slots-container">
         <!-- Slot rows injected via JS -->
+      </div>
+
+      <div class="daily-summary" id="daily-summary-bottom" style="margin-top: 1rem; justify-content: center; padding-bottom: 2rem;">
+        <div class="summary-box summary-phya"><span id="daily-total-phya">0</span> PHYA</div>
+        <div class="summary-box summary-tisa"><span id="daily-total-tisa">0</span> TISA</div>
       </div>
     </div>
   </div>
