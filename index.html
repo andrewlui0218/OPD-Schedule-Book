@@ -2,9 +2,12 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>Andrew Lui OPD Schedule</title>
   <style>
+    button {
+      touch-action: manipulation;
+    }
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=Playfair+Display:italic,wght@700&family=JetBrains+Mono:wght@400;600&display=swap');
 
     :root {
@@ -187,6 +190,23 @@
 
     .calendar-cell.has-remark {
       /* background-color: var(--warning); Removed to prevent yellow background */
+    }
+
+    .calendar-cell.today-highlight {
+      /* Removed border */
+    }
+    
+    .calendar-cell.today-highlight .date-number {
+      color: white;
+      font-weight: 700;
+      background-color: var(--secondary);
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.25rem;
     }
 
     .blocked-reason-text {
@@ -700,9 +720,9 @@
         unsubscribe: null
     };
 
-    // Timeslots: 13:15 to 16:30 every 15 mins
+    // Timeslots: 13:30 to 16:30 every 15 mins
     const TIMESLOTS = [
-      "13:15", "13:30", "13:45", "14:00", "14:15", "14:30", "14:45", 
+      "13:30", "13:45", "14:00", "14:15", "14:30", "14:45", 
       "15:00", "15:15", "15:30", "15:45", "16:00", "16:15", "16:30"
     ];
 
@@ -911,6 +931,9 @@
             if (data.is_blocked) cell.classList.add('blocked');
             if (data.remark) cell.classList.add('has-remark');
 
+            const todayStr = toDateStr(new Date());
+            if (dateStr === todayStr) cell.classList.add('today-highlight');
+
             let html = `<div class="date-number">${day}</div>`;
             
             if (data.remark) {
@@ -1014,7 +1037,12 @@
             const isDisabled = data.is_blocked || slot.is_blocked ? 'disabled' : '';
 
             row.innerHTML = `
-                <div class="slot-time col-time">${time}</div>
+                <div class="col-time" style="display: flex; flex-direction: column; align-items: center; justify-content: center;">
+                    <div class="slot-time" style="text-align: center; width: 100%;">${time}</div>
+                    <div class="slot-total" style="font-size: 1.1rem; font-weight: 700; color: var(--olive); opacity: 0.8; margin-top: 0.15rem;">
+                      ${(slot.phya || 0) + (slot.tisa || 0)}
+                    </div>
+                </div>
                 
                 <div class="slot-counter col-phya">
                     <span class="slot-counter-label phya">PHYA</span>
